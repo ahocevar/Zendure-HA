@@ -578,6 +578,10 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
 
         # stop charging devices
         for d in self.charge:
+            # Dead band: don't stop a device that is actively balancing the grid (it IS the balance).
+            # Only stop it when there is a meaningful positive setpoint or the device isn't drawing AC.
+            if setpoint < SmartMode.POWER_START and d.homeInput.asInt > SmartMode.POWER_TOLERANCE:
+                continue
             # SF 2400 may show more gridInputPower than offGridPower and will be recognized as charging, so set power to 10 instead of 0
             await d.power_discharge(0 if max(0, d.pwr_offgrid) == 0 else 10)
 
