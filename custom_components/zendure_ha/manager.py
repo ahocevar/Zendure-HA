@@ -436,8 +436,10 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     self.charge_optimal += d.charge_optimal
                     self.charge_weight += d.pwr_max * (100 - d.electricLevel.asInt)
                     setpoint += -d.homeInput.asInt  # use gridInputPower directly; offgrid consumers are invisible to P1
-                # SOCEMPTY means, it could not discharge the battery, but it is still possible to feed into the home using solarpower or offGrid
-                elif (home := d.homeOutput.asInt) > 0:
+                # SOCEMPTY means, it could not discharge the battery, but it is still possible to feed into the home using solarpower or offGrid.
+                # Also classify as discharge when the device has an off-grid load: on devices like the SF 2400 AC, outputHomePower reads 0
+                # even while the device is autonomously back-feeding the grid, so pwr_offgrid is our only reliable "device is running" signal.
+                elif (home := d.homeOutput.asInt) > 0 or (d.pwr_offgrid > 0 and d.state != DeviceState.SOCEMPTY):
                     self.discharge.append(d)
                     self.discharge_bypass -= d.pwr_produced if d.state == DeviceState.SOCFULL else 0
                     self.discharge_limit += d.fuseGrp.discharge_limit(d)
@@ -445,6 +447,14 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     self.discharge_produced -= d.pwr_produced
                     self.discharge_weight += d.pwr_max * d.electricLevel.asInt
                     setpoint += home
+                    # When a device is in discharge only because of pwr_offgrid (no home output),
+                    # it can still absorb surplus from another device's SOCFULL bypass. Expose it
+                    # as an idle candidate too, so power_charge can engage it before a sibling
+                    # device starts charging autonomously from AC.
+                    if home == 0 and d.state != DeviceState.SOCFULL:
+                        self.idle.append(d)
+                        self.idle_lvlmax = max(self.idle_lvlmax, d.electricLevel.asInt)
+                        self.idle_lvlmin = min(self.idle_lvlmin, d.electricLevel.asInt)
 
                 else:
                     self.idle.append(d)
