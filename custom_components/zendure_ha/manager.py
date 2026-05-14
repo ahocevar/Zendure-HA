@@ -435,7 +435,16 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     self.charge_limit += d.fuseGrp.charge_limit(d)
                     self.charge_optimal += d.charge_optimal
                     self.charge_weight += d.pwr_max * (100 - d.electricLevel.asInt)
-                    setpoint += -d.homeInput.asInt  # use gridInputPower directly; offgrid consumers are invisible to P1
+                    # Credit charging against setpoint, but only the portion of homeInput that
+                    # is actually charging the battery (batteryInput). The rest is off-grid
+                    # pass-through or losses — it's a real consumer of the home AC bus, not
+                    # surplus absorption, so it shouldn't reduce the discharge target. Using
+                    # min(homeInput, batteryInput) is symmetric with the AC-side flow: when
+                    # the firmware respects the commanded inputLimit and feeds the battery,
+                    # both track together and full credit applies; when the firmware can only
+                    # partially charge (SOCFULL, thermal, off-grid passthrough), the credit
+                    # shrinks accordingly.
+                    setpoint -= min(d.homeInput.asInt, d.batteryInput.asInt)
                 # SOCEMPTY means, it could not discharge the battery, but it is still possible to feed into the home using solarpower or offGrid
                 elif (home := d.homeOutput.asInt) > 0:
                     self.discharge.append(d)
