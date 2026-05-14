@@ -125,6 +125,7 @@ class ZendureDevice(EntityDevice):
         self.pwr_produced: int = 0
         self.actualKwh: float = 0.0
         self.state: DeviceState = DeviceState.OFFLINE
+        self.charge_deadband_since: datetime | None = None
 
         self.create_entities()
 

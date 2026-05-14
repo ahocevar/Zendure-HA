@@ -71,3 +71,4 @@ class SmartMode:
 
     POWER_START = 60  # Minimum Power (W) for starting a device
     POWER_TOLERANCE = 5  # Device-level power tolerance (W) before updating
+    CHARGE_DEADBAND_HOLD = 30  # Seconds a small positive setpoint must persist before ramping charge down
