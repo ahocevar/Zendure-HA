@@ -38,6 +38,7 @@ class _FakeDevice:
         self.byPass = SimpleNamespace(asInt=0)
         self.pwr_offgrid = 0
         self.pwr_produced = 0
+        self.pwr_bypass = 0
         self.state = state
         self.charge_start = 0
         self.charge_optimal = 0
@@ -66,6 +67,7 @@ def _make_manager_harness() -> ZendureManager:
     manager.charge_weight = 0
     manager.discharge = []
     manager.discharge_produced = 0
+    manager.discharge_bypass = 0
     manager.discharge_limit = 0
     manager.discharge_optimal = 0
     manager.discharge_weight = 0

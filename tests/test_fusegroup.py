@@ -63,6 +63,7 @@ async def test_group600_1200_caps_discharge_dispatch_at_600(zensdk_device) -> No
     manager = _make_dispatch_harness()
     manager.discharge = [zensdk_device]
     manager.discharge_limit = zensdk_device.fuseGrp.discharge_limit(zensdk_device)
+    manager.discharge_bypass = 0
     manager.discharge_weight = zensdk_device.pwr_max * zensdk_device.electricLevel.asInt
 
     await manager.power_discharge(1500)
